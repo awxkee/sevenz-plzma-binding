@@ -108,7 +108,7 @@ Java_com_github_awxkee_sevenzlzma_SevenLzma_extractImpl(JNIEnv *env, jobject thi
         auto allArchiveItems = decoder->items();
         auto javaOutPath = env->GetStringUTFChars(to, nullptr);
         std::string outPath(javaOutPath);
-        env->ReleaseStringUTFChars(from, javaOutPath);
+        env->ReleaseStringUTFChars(to, javaOutPath);
         if (!decoder->extract(Path(outPath.c_str()))) {
             throwCantExtractFilesException(env);
         }
