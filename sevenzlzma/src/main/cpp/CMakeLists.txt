@@ -16,7 +16,7 @@ set(CMAKE_CXX_STANDARD 20)
 add_library( # Sets the name of the library.
         sevenzlzma
         SHARED
-        sevenzlzma.cpp libplzma.hpp jni_exception.cpp)
+        sevenzlzma.cpp libplzma.hpp jni_exception.cpp fd_stream.cpp)
 
 find_library( # Sets the name of the path variable.
         log-lib
