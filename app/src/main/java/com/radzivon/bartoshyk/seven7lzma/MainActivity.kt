@@ -1,7 +1,6 @@
 package com.radzivon.bartoshyk.seven7lzma
 
 import android.os.Bundle
-import android.os.ParcelFileDescriptor
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
@@ -57,14 +56,11 @@ class MainActivity : AppCompatActivity() {
             }
             val archive = File(filesDir, "archive.7z")
             SevenLzma().compress(archive.path, compressingFiles.map { it.path }, "test", 9)
-            val pfd1 = ParcelFileDescriptor.open(archive, ParcelFileDescriptor.MODE_READ_ONLY)
-            pfd1.use { pfd ->
-                assert(SevenLzma().isPasswordProtected(pfd))
-                assert(!SevenLzma().validatePassword(pfd, "kyky"))
-                assert(SevenLzma().validatePassword(pfd, "test"))
-                File(filesDir, "dst").deleteRecursively()
-                SevenLzma().extract(pfd, File(filesDir, "dst").path, "test")
-            }
+            assert(SevenLzma().isPasswordProtected(archive.path))
+            assert(!SevenLzma().validatePassword(archive.path, "kyky"))
+            assert(SevenLzma().validatePassword(archive.path, "test"))
+            File(filesDir, "dst").deleteRecursively()
+            SevenLzma().extract(archive.path, File(filesDir, "dst").path, "test")
         }
 
         binding.fab.setOnClickListener { view ->

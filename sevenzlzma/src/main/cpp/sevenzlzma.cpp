@@ -6,7 +6,6 @@
 #include <vector>
 #include <filesystem>
 #include <android/log.h>
-#include "fd_stream.h"
 
 using namespace plzma;
 
@@ -79,13 +78,57 @@ Java_com_github_awxkee_sevenzlzma_SevenLzma_compressImpl(JNIEnv *env, jobject th
     }
 }
 extern "C"
+JNIEXPORT void JNICALL
+Java_com_github_awxkee_sevenzlzma_SevenLzma_extractImpl(JNIEnv *env, jobject thiz, jstring from,
+                                                        jstring to,
+                                                        jstring jpassword) {
+    try {
+        auto javaFromPath = env->GetStringUTFChars(from, nullptr);
+        std::string sourcePath(javaFromPath);
+        env->ReleaseStringUTFChars(from, javaFromPath);
+        auto sourceStream = makeSharedInStream(Path(sourcePath.c_str()));
+        auto decoder = makeSharedDecoder(sourceStream, plzma_file_type_7z);
+        bool usePassword = false;
+        std::string password;
+        if (jpassword) {
+            auto javaPassword = env->GetStringUTFChars(jpassword, nullptr);
+            if (strlen(javaPassword) > 0) {
+                usePassword = true;
+                password = javaPassword;
+            }
+            env->ReleaseStringUTFChars(jpassword, javaPassword);
+        }
+        if (usePassword && password.length() > 0) {
+            decoder->setPassword(password.c_str());
+        }
+        if (!decoder->open()) {
+            throwCantCreateDecoder(env);
+            return;
+        }
+        auto allArchiveItems = decoder->items();
+        auto javaOutPath = env->GetStringUTFChars(to, nullptr);
+        std::string outPath(javaOutPath);
+        env->ReleaseStringUTFChars(from, javaOutPath);
+        if (!decoder->extract(Path(outPath.c_str()))) {
+            throwCantExtractFilesException(env);
+        }
+    } catch (const Exception &exception) {
+        throwDecodingFailedException(env, exception.what());
+    } catch (const std::exception &exception) {
+        throwDecodingFailedException(env, exception.what());
+    } catch (...) {
+        throwDecodingFailedException(env, "Unknown exception");
+    }
+}
+extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_github_awxkee_sevenzlzma_SevenLzma_validatePasswordImpl(JNIEnv *env, jobject thiz,
-                                                                 jint fd, jstring jpassword) {
+                                                                 jstring from, jstring jpassword) {
     try {
-        auto sourceStream = makeSharedInStream(fd_open_callback, fd_close_callback,
-                                               fd_seek_callback, fd_read_callback,
-                                               create_fd_context(fd));
+        auto javaFromPath = env->GetStringUTFChars(from, nullptr);
+        std::string sourcePath(javaFromPath);
+        env->ReleaseStringUTFChars(from, javaFromPath);
+        auto sourceStream = makeSharedInStream(Path(sourcePath.c_str()));
         auto decoder = makeSharedDecoder(sourceStream, plzma_file_type_7z);
         bool usePassword = false;
         std::string password;
@@ -127,46 +170,5 @@ Java_com_github_awxkee_sevenzlzma_SevenLzma_validatePasswordImpl(JNIEnv *env, jo
     } catch (...) {
         throwDecodingFailedException(env, "Unknown exception");
         return false;
-    }
-}
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_github_awxkee_sevenzlzma_SevenLzma_extractFdImpl(JNIEnv *env, jobject thiz, jint fd,
-                                                          jstring to, jstring jpassword) {
-    try {
-        auto sourceStream = makeSharedInStream(fd_open_callback, fd_close_callback,
-                                               fd_seek_callback, fd_read_callback,
-                                               create_fd_context(fd));
-        auto decoder = makeSharedDecoder(sourceStream, plzma_file_type_7z);
-        bool usePassword = false;
-        std::string password;
-        if (jpassword) {
-            auto javaPassword = env->GetStringUTFChars(jpassword, nullptr);
-            if (strlen(javaPassword) > 0) {
-                usePassword = true;
-                password = javaPassword;
-            }
-            env->ReleaseStringUTFChars(jpassword, javaPassword);
-        }
-        if (usePassword && password.length() > 0) {
-            decoder->setPassword(password.c_str());
-        }
-        if (!decoder->open()) {
-            throwCantCreateDecoder(env);
-            return;
-        }
-        auto allArchiveItems = decoder->items();
-        auto javaOutPath = env->GetStringUTFChars(to, nullptr);
-        std::string outPath(javaOutPath);
-        env->ReleaseStringUTFChars(to, javaOutPath);
-        if (!decoder->extract(Path(outPath.c_str()))) {
-            throwCantExtractFilesException(env);
-        }
-    } catch (const Exception &exception) {
-        throwDecodingFailedException(env, exception.what());
-    } catch (const std::exception &exception) {
-        throwDecodingFailedException(env, exception.what());
-    } catch (...) {
-        throwDecodingFailedException(env, "Unknown exception");
     }
 }

@@ -1,21 +1,20 @@
 package com.github.awxkee.sevenzlzma
 
-import android.os.ParcelFileDescriptor
 import androidx.annotation.Keep
 
 @Keep
 class SevenLzma {
 
-    fun isPasswordProtected(archive: ParcelFileDescriptor): Boolean {
-        return !validatePasswordImpl(archive.fd, null)
+    fun isPasswordProtected(archive: String): Boolean {
+        return !validatePasswordImpl(archive, null)
     }
 
-    fun validatePassword(archive: ParcelFileDescriptor, password: String?): Boolean {
-        return validatePasswordImpl(archive.fd, password)
+    fun validatePassword(archive: String, password: String?): Boolean {
+        return validatePasswordImpl(archive, password)
     }
 
-    fun extract(pfd: ParcelFileDescriptor, to: String, password: String?) {
-        extractFdImpl(pfd.fd, to, password)
+    fun extract(archive: String, to: String, password: String?) {
+        extractImpl(archive, to, password)
     }
 
     fun compress(
@@ -34,9 +33,9 @@ class SevenLzma {
         compressImpl(to, files.toTypedArray(), password, compressionLevel)
     }
 
-    private external fun validatePasswordImpl(fd: Int, password: String?): Boolean
+    private external fun validatePasswordImpl(from: String, password: String?): Boolean
 
-    private external fun extractFdImpl(fd: Int, to: String, password: String?)
+    private external fun extractImpl(from: String, to: String, password: String?)
 
     private external fun compressImpl(
         to: String,
